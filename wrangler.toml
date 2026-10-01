@@ -1,7 +1,17 @@
-name = "planetary-max"
+name = "max-os-1"
 main = "src/index.ts"
-compatibility_date = "2026-09-17"
+compatibility_date = "2024-10-01"
 
+# -----------------------------
+# KV NAMESPACE (YOUR PROVIDED ID)
+# -----------------------------
+[[kv_namespaces]]
+binding = "planetary-max-1"
+id = "ede711e3c9764df481d63dcc5820b7e7"
+
+# -----------------------------
+# ENVIRONMENT VARIABLES
+# -----------------------------
 [vars]
 PLANETARY_MODE = "active"
 UMBRELLA_ENFORCEMENT = "enabled"
