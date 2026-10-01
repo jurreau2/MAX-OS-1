@@ -3,17 +3,11 @@ main = "src/index.ts"
 compatibility_date = "2024-10-01"
 
 # -----------------------------
-# REMOVE ALL R2 BUCKETS
-# -----------------------------
-# There must be ZERO r2_buckets entries.
-# Delete any existing [[r2_buckets]] blocks.
-
-# -----------------------------
-# KV NAMESPACE (REQUIRED)
+# KV NAMESPACE (YOUR PROVIDED ID)
 # -----------------------------
 [[kv_namespaces]]
-binding = "MAXOS_STATE"
-id = "<YOUR_KV_NAMESPACE_ID>"
+binding = "planetary-max-1"
+id = "ede711e3c9764df481d63dcc5820b7e7"
 
 # -----------------------------
 # ENVIRONMENT VARIABLES
