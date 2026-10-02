@@ -6,7 +6,7 @@ COPY . /app
 RUN python -m compileall /app
 
 FROM python:3.11-slim AS runtime
-WORKDIR /app
+WORKDIR /app 
 COPY --from=builder /app /app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
