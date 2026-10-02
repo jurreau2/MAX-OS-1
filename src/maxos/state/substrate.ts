@@ -52,9 +52,21 @@ export class Substrate {
     const span = await this.observability?.trace.startSpan(`substrate.${operation}`);
     const stopTimer = this.observability?.metrics.timer('maxos_substrate_latency_ms', { operation });
     this.observability?.metrics.increment('maxos_substrate_operations_total', { operation });
-    try { const result = await retry(() => withTimeout(async () => { try { return await execute(); } catch (error) { if (error instanceof MaxOsError) throw error; throw new SubstrateError('Substrate operation is unavailable', 'SUBSTRATE_UNAVAILABLE', 503, true); } }, { timeoutMs: this.timeoutMs, createError: () => substrateTimeout(this.timeoutMs) }), this.retryPolicy, { shouldRetry: (error) => error instanceof SubstrateError && error.retryable }); stopTimer?.(); return result; }
-    catch (error) { stopTimer?.(); this.observability?.metrics.increment('maxos_failures_total', { stage: 'substrate' }); this.observability?.logger.error('substrate.failure', { operation, spanId: span?.spanId }); throw error; }
+    try { const result = await retry(() => withTimeout(async () => { try { return await execute(); } catch (error) { if (error instanceof MaxOsError) throw error; throw new SubstrateError('Substrate operation failed', operation, 500); } }, this.timeoutMs), this.retryPolicy); return result; }
+    catch (error) { stopTimer?.(); this.observability?.metrics.increment('maxos_failures_total', { stage: 'substrate' }); this.observability?.logger.error('substrate.failure', { operation, spanId: span?.id, error: error instanceof Error ? error.message : String(error) }); throw error; }
+    finally { stopTimer?.(); span?.end(); }
   }
 }
 
-export function createDurableSubstrate(bucket: R2Bucket, options: SubstrateOptions = {}): Substrate { return new Substrate({ sessions: new R2StateRepository(bucket, createStateCodec(isSessionState), 'maxos/sessions/'), sim: new R2StateRepository(bucket, createStateCodec(isSIMState), 'maxos/sim/'), tec: new R2StateRepository(bucket, createStateCodec(isTECState), 'maxos/tec/'), universe: new R2StateRepository(bucket, createStateCodec(isUniverseState), 'maxos/universe/') }, options); }
+export function createDurableSubstrate(bucket?: R2Bucket, options: SubstrateOptions = {}): Substrate {
+  const repositories = bucket
+    ? {
+        sessions: new R2StateRepository(bucket, createStateCodec(isSessionState)),
+        sim: new R2StateRepository(bucket, createStateCodec(isSIMState)),
+        tec: new R2StateRepository(bucket, createStateCodec(isTECState)),
+        universe: new R2StateRepository(bucket, createStateCodec(isUniverseState)),
+      }
+    : {};
+
+  return new Substrate(repositories, options);
+}

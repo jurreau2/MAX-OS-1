@@ -17,7 +17,7 @@ app.all('*', async (c) => {
   try {
     const maxAttempts = parsePositiveInteger(c.env.MAX_RETRY_ATTEMPTS, 'MAX_RETRY_ATTEMPTS', 10);
     const retryBaseDelayMs = parsePositiveInteger(c.env.RETRY_BASE_DELAY_MS, 'RETRY_BASE_DELAY_MS', 10_000);
-    const substrate = createDurableSubstrate(c.env.MAXOS_STATE, {
+    const substrate = createDurableSubstrate(undefined, {
       observability,
       retry: { baseDelayMs: retryBaseDelayMs, maxAttempts },
       timeoutMs: parsePositiveInteger(c.env.SUBSTRATE_TIMEOUT_MS, 'SUBSTRATE_TIMEOUT_MS'),
