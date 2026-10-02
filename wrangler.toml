@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2024-10-01"
 
 # -----------------------------
-# KV NAMESPACE (YOUR PROVIDED ID)
+# KV NAMESPACE
 # -----------------------------
 [[kv_namespaces]]
 binding = "planetary-max-1"
@@ -24,10 +24,15 @@ RETRY_BASE_DELAY_MS = "50"
 CIRCUIT_FAILURE_THRESHOLD = "5"
 CIRCUIT_COOLDOWN_MS = "30000"
 
+# -----------------------------
+# SERVICES
+# -----------------------------
 [[services]]
 binding = "KERNEL_SERVICE"
 service = "portal-kernel"
 
-[[r2_buckets]]
-binding = "MAXOS_STATE"
-bucket_name = "planetary-max-state"
+# -----------------------------
+# BUILD
+# -----------------------------
+[build]
+command = "npm run build"
