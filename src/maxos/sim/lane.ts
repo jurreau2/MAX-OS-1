@@ -52,20 +52,18 @@ export function produceSIMOutput(state: StateModel<SIMState>): JsonObject {
     lastEnvelopeId: state.value.lastEnvelopeId,
     memory: state.value.memory,
     steps: state.value.steps,
-    mode: state.value.mode,
-    last_op: state.value.lastOp,
-    last_calc: state.value.lastCalc,
-    last_map: state.value.lastMap,
-    last_pipe: state.value.lastPipe,
-    last_expand: state.value.lastExpand,
-    last_build: state.value.lastBuild,
+    mode: state.value.mode ?? 'running',
+    last_op: state.value.lastOp ?? null,
+    last_calc: state.value.lastCalc ?? null,
+    last_map: state.value.lastMap ?? null,
+    last_pipe: state.value.lastPipe ?? null,
+    last_expand: state.value.lastExpand ?? null,
+    last_build: state.value.lastBuild ?? null,
     global_state: state.value.global ?? {},
     status: state.value.status ?? 'connected',
-  });
-  if (output === null || typeof output !== 'object' || Array.isArray(output)) {
-    throw new Error('Expected JsonObject');
-  }
-  return output as JsonObject;
+  }) as JsonObject;
+
+  return output;
 }
 
 export function attachSIMMetadata(response: SIMResponse): SIMResponse {
