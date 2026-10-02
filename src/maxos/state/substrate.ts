@@ -17,7 +17,12 @@ export class Substrate {
   private readonly timeoutMs: number;
 
   constructor(repositories: Partial<SubstrateRepositories> = {}, options: SubstrateOptions = {}) {
-    this.repositories = { sessions: repositories.sessions ?? new InMemoryRepository<SessionState>(), sim: repositories.sim ?? new InMemoryRepository<SIMState>(), tec: repositories.tec ?? new InMemoryRepository<TECState>(), universe: repositories.universe ?? new InMemoryRepository<UniverseState>() };
+    this.repositories = {
+      sessions: repositories.sessions ?? new InMemoryRepository<SessionState>(),
+      sim: repositories.sim ?? new InMemoryRepository<SIMState>(),
+      tec: repositories.tec ?? new InMemoryRepository<TECState>(),
+      universe: repositories.universe ?? new InMemoryRepository<UniverseState>(),
+    };
     this.observability = options.observability;
     this.retryPolicy = options.retry ?? { baseDelayMs: 0, maxAttempts: 1 };
     this.timeoutMs = options.timeoutMs ?? 5_000;
@@ -52,9 +57,46 @@ export class Substrate {
     const span = await this.observability?.trace.startSpan(`substrate.${operation}`);
     const stopTimer = this.observability?.metrics.timer('maxos_substrate_latency_ms', { operation });
     this.observability?.metrics.increment('maxos_substrate_operations_total', { operation });
-    try { const result = await retry(() => withTimeout(async () => { try { return await execute(); } catch (error) { if (error instanceof MaxOsError) throw error; throw new SubstrateError('Substrate operation failed', 'SUBSTRATE_UNAVAILABLE', 503, true); } }, this.timeoutMs), this.retryPolicy); stopTimer?.(); return result; }
-    catch (error) { stopTimer?.(); this.observability?.metrics.increment('maxos_failures_total', { stage: 'substrate' }); this.observability?.logger.error('substrate.failure', { operation, spanId: span?.spanId }); throw error; }
-    finally { if (span) { const spanWithFinish = span as any; if (typeof spanWithFinish.finish === 'function') { spanWithFinish.finish(); } } }
+    try {
+      const result = await retry(
+        async () => withTimeout(
+          async () => {
+            try {
+              return await execute();
+            } catch (error) {
+              if (error instanceof MaxOsError) throw error;
+              throw new SubstrateError(`Substrate operation ${operation} failed`, 'SUBSTRATE_UNAVAILABLE', 503, true);
+            }
+          },
+          { createError: () => substrateTimeout(this.timeoutMs), timeoutMs: this.timeoutMs },
+        ),
+        this.retryPolicy,
+        {
+          shouldRetry: (error) => error instanceof MaxOsError ? error.retryable : false,
+          onRetry: (attempt, delayMs, error) => {
+            this.observability?.logger.warn('substrate.retry', {
+              operation,
+              attempt,
+              delayMs,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          },
+        },
+      );
+      return result;
+    } catch (error) {
+      stopTimer?.();
+      this.observability?.metrics.increment('maxos_failures_total', { stage: 'substrate' });
+      this.observability?.logger.error('substrate.failure', { operation, spanId: span?.spanId, error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    } finally {
+      if (span) {
+        const spanWithFinish = span as any;
+        if (typeof spanWithFinish.finish === 'function') {
+          spanWithFinish.finish();
+        }
+      }
+    }
   }
 }
 
