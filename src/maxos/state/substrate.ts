@@ -27,7 +27,7 @@ export class Substrate {
   transitionSIM(transition: StateTransition<SIMState>): Promise<StateModel<SIMState>> {
     return this.executeOperation('sim.transition', async () => {
       const next = normalizeSIMState(transition.next);
-      if (!validateSIMState(next)) throw new MaxOsError('INVALID_STATE', 'Invalid SIMState after transition', 422);
+      if (!validateSIMState(next)) throw new MaxOsError('INVALID_ENVELOPE', 'Invalid SIMState after transition', 422);
       return this.applyTransition(this.repositories.sim, { ...transition, next });
     });
   }
@@ -52,9 +52,9 @@ export class Substrate {
     const span = await this.observability?.trace.startSpan(`substrate.${operation}`);
     const stopTimer = this.observability?.metrics.timer('maxos_substrate_latency_ms', { operation });
     this.observability?.metrics.increment('maxos_substrate_operations_total', { operation });
-    try { const result = await retry(() => withTimeout(async () => { try { return await execute(); } catch (error) { if (error instanceof MaxOsError) throw error; throw new SubstrateError('Substrate operation failed', operation, 500); } }, this.timeoutMs), this.retryPolicy); return result; }
-    catch (error) { stopTimer?.(); this.observability?.metrics.increment('maxos_failures_total', { stage: 'substrate' }); this.observability?.logger.error('substrate.failure', { operation, spanId: span?.id, error: error instanceof Error ? error.message : String(error) }); throw error; }
-    finally { stopTimer?.(); span?.end(); }
+    try { const result = await retry(() => withTimeout(async () => { try { return await execute(); } catch (error) { if (error instanceof MaxOsError) throw error; throw new SubstrateError('Substrate operation failed', 'SUBSTRATE_UNAVAILABLE', 503, true); } }, this.timeoutMs), this.retryPolicy); stopTimer?.(); return result; }
+    catch (error) { stopTimer?.(); this.observability?.metrics.increment('maxos_failures_total', { stage: 'substrate' }); this.observability?.logger.error('substrate.failure', { operation, spanId: span?.spanId }); throw error; }
+    finally { span && 'finish' in span ? (span.finish as () => void)() : undefined; }
   }
 }
 
