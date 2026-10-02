@@ -14,7 +14,7 @@ export class SIMLane {
   async handleIntrospectionBehavior(envelope?: Envelope): Promise<JsonObject> {
     const state = await this.substrate.readSIM(stateKey(envelope));
     const sim = normalizeSIMState(state?.value ?? null);
-    return stableClone({
+    const result = stableClone({
       mode: sim.mode,
       last_op: sim.lastOp,
       last_calc: sim.lastCalc,
@@ -25,6 +25,10 @@ export class SIMLane {
       global_state: sim.global,
       status: sim.status,
     });
+    if (result === null || typeof result !== 'object' || Array.isArray(result)) {
+      throw new Error('Expected JsonObject');
+    }
+    return result as JsonObject;
   }
 }
 
@@ -44,7 +48,7 @@ export async function maintainSIMState(envelope: Envelope, substrate: Substrate,
 }
 
 export function produceSIMOutput(state: StateModel<SIMState>): JsonObject {
-  return stableClone({
+  const output = stableClone({
     lastEnvelopeId: state.value.lastEnvelopeId,
     memory: state.value.memory,
     steps: state.value.steps,
@@ -58,6 +62,10 @@ export function produceSIMOutput(state: StateModel<SIMState>): JsonObject {
     global_state: state.value.global ?? {},
     status: state.value.status ?? 'connected',
   });
+  if (output === null || typeof output !== 'object' || Array.isArray(output)) {
+    throw new Error('Expected JsonObject');
+  }
+  return output as JsonObject;
 }
 
 export function attachSIMMetadata(response: SIMResponse): SIMResponse {

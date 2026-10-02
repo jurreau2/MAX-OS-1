@@ -54,7 +54,7 @@ export class Substrate {
     this.observability?.metrics.increment('maxos_substrate_operations_total', { operation });
     try { const result = await retry(() => withTimeout(async () => { try { return await execute(); } catch (error) { if (error instanceof MaxOsError) throw error; throw new SubstrateError('Substrate operation failed', 'SUBSTRATE_UNAVAILABLE', 503, true); } }, this.timeoutMs), this.retryPolicy); stopTimer?.(); return result; }
     catch (error) { stopTimer?.(); this.observability?.metrics.increment('maxos_failures_total', { stage: 'substrate' }); this.observability?.logger.error('substrate.failure', { operation, spanId: span?.spanId }); throw error; }
-    finally { span && 'finish' in span ? (span.finish as () => void)() : undefined; }
+    finally { if (span) { const spanWithFinish = span as any; if (typeof spanWithFinish.finish === 'function') { spanWithFinish.finish(); } } }
   }
 }
 
