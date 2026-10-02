@@ -75,6 +75,5 @@ MaxOsBindings {
     CIRCUIT_FAILURE_THRESHOLD: '5',
     CIRCUIT_COOLDOWN_MS: '30000',
     KERNEL_SERVICE: { fetch } as unknown as Fetcher,
-    MAXOS_STATE: r2Bucket(),
   };
 }
